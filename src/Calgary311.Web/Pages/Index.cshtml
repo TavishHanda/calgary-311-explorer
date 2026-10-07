@@ -1,0 +1,31 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<h1>Calgary 311 Explorer</h1>
+<p class="lead">Browse and analyze 311 service requests from the City of Calgary's open data portal.</p>
+
+@if (Model.SetupMessage is not null)
+{
+    <div class="notice">@Model.SetupMessage</div>
+}
+else
+{
+    <dl class="stats">
+        <div>
+            <dt>Requests stored</dt>
+            <dd>@Model.TotalRequests.ToString("N0")</dd>
+        </div>
+        <div>
+            <dt>Newest request</dt>
+            <dd>@(Model.NewestRequest?.ToString("MMM d, yyyy") ?? "None yet")</dd>
+        </div>
+    </dl>
+
+    @if (Model.TotalRequests == 0)
+    {
+        <p>The database is empty. Build the sync service (roadmap step 3) to load requests from the City's API.</p>
+    }
+}
