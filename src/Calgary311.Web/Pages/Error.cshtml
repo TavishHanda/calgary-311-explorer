@@ -1,0 +1,9 @@
+@page
+@* Shown by app.UseExceptionHandler("/Error") when something fails outside development. Kept simple on purpose:
+   it doesn't touch the database, so it still works when the database is the thing that failed. *@
+@{
+    ViewData["Title"] = "Error";
+}
+
+<h1>Something went wrong</h1>
+<p class="lead">Sorry, that page couldn't be loaded. Try again in a moment, or go back to the <a asp-page="/Index">home page</a>.</p>

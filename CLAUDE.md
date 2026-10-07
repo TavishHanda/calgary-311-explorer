@@ -19,7 +19,7 @@ From the repository root:
 - Test: `dotnet test`
 - Run the web app: `dotnet run --project src/Calgary311.Web`
 - New migration: `dotnet ef migrations add <Name> --project src/Calgary311.Web`
-- Apply migrations: `dotnet ef database update --project src/Calgary311.Web`
+- Apply migrations: the app applies them itself at startup (`DatabaseSetup.MigrateDatabase`); `dotnet ef database update --project src/Calgary311.Web` does the same by hand.
 
 ## Conventions
 

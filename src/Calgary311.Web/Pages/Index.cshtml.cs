@@ -31,9 +31,9 @@ public class IndexModel(AppDbContext db, IOptions<OpenCalgaryOptions> options, I
         }
         catch (Exception ex)
         {
-            // Most likely the database hasn't been created yet. The migrations are in the repo, so applying them is enough.
+            // The app creates the database at startup, so this means something else went wrong (e.g. file permissions).
             logger.LogWarning(ex, "Could not read the database");
-            SetupMessage = "Couldn't read the database. If it hasn't been created yet, run: dotnet ef database update (in src/Calgary311.Web), then restart the app.";
+            SetupMessage = "Couldn't read the database. Check the app's log for details.";
         }
     }
 

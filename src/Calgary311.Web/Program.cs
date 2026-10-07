@@ -31,9 +31,13 @@ builder.Services.AddHttpClient<ServiceRequestSync>((services, client) =>
 
 var app = builder.Build();
 
+// Before app.Run() starts the background sync, so the tables exist by the time it needs them.
+app.MigrateDatabase();
+
 if (!app.Environment.IsDevelopment())
 {
-    // TODO (optional): add an Error page and call app.UseExceptionHandler("/Error") here.
+    // Outside development, an unhandled error shows the friendly Error page instead of a blank 500.
+    app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
 

@@ -86,16 +86,22 @@ Things worth knowing about the data:
 ```bash
 git clone https://github.com/TavishHanda/calgary-311-explorer.git
 cd calgary-311-explorer
-
-# First time only: install the EF Core tools and create the database from the migrations
-dotnet tool install --global dotnet-ef
-cd src/Calgary311.Web
-dotnet ef database update
-
-dotnet run
+dotnet run --project src/Calgary311.Web
 ```
 
-Open the URL shown in the terminal (usually `http://localhost:5000`). The app starts loading the last 90 days of requests in the background straight away; the first sync takes a few minutes, and later ones only fetch what changed.
+Open the URL shown in the terminal (usually `http://localhost:5000`). On first run the app creates the SQLite database from its migrations, then starts loading the last 90 days of requests in the background; the first sync takes a few minutes, and later ones only fetch what changed.
+
+### Deploy to Azure
+
+Pushes to `main` that pass the tests are deployed to [Azure App Service](https://learn.microsoft.com/azure/app-service/) by the `deploy` job in `.github/workflows/ci.yml`. One-time setup:
+
+1. In the Azure portal, create a **Web App**: publish **Code**, runtime stack **.NET 10**, operating system **Linux**, pricing plan **Free F1** (or Basic B1 to keep the app awake so the nightly sync runs on time).
+2. In the web app's **Settings > Environment variables**, add:
+   - `ConnectionStrings__Default` = `Data Source=/home/data/calgary311.db` (`/home` is the only folder that survives restarts and redeploys)
+   - `TZ` = `America/Edmonton` (so the daily sync runs at 3 a.m. Calgary time)
+3. In **Settings > Configuration > General settings**, turn on **SCM Basic Auth Publishing Credentials**, then on the **Overview** page click **Download publish profile**.
+4. In the GitHub repository's **Settings > Secrets and variables > Actions**, add a secret `AZURE_WEBAPP_PUBLISH_PROFILE` with the publish profile's contents, and a variable `AZURE_WEBAPP_NAME` with the web app's name.
+5. Push to `main` (or re-run the latest workflow). The app creates its database on first start and loads the data in the background.
 
 ### API
 
@@ -193,7 +199,9 @@ calgary-311-explorer/
 
 - [x] **Extra:** automatic daily sync, and builds and tests on GitHub Actions
 
-Next: deployment to Azure App Service. A map is less useful than planned, since every request in a community shares one point.
+- [x] **Extra:** deployment pipeline to Azure App Service (see [Deploy to Azure](#deploy-to-azure))
+
+A map is less useful than planned, since every request in a community shares one point.
 
 ## What I learned
 
