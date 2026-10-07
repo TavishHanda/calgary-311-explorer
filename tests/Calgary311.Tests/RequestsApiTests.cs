@@ -36,7 +36,10 @@ public class RequestsApiTests : IDisposable
         }
 
         _factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseSetting("ConnectionStrings:Default", connectionString));
+            .WithWebHostBuilder(builder => builder
+                .UseSetting("ConnectionStrings:Default", connectionString)
+                // Otherwise starting the app would sync from the real City API during tests.
+                .UseSetting("OpenCalgary:AutoSync", "false"));
         _client = _factory.CreateClient();
     }
 

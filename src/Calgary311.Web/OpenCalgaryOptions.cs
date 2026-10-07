@@ -21,4 +21,10 @@ public class OpenCalgaryOptions
 
     /// <summary>Optional Socrata app token for higher rate limits. Leave empty to run without one.</summary>
     public string? AppToken { get; set; }
+
+    /// <summary>Sync automatically when the app starts and once a day.</summary>
+    public bool AutoSync { get; set; } = true;
+
+    /// <summary>Local time of day for the daily sync, e.g. "03:00".</summary>
+    public TimeSpan DailySyncTime { get; set; } = new(3, 0, 0);
 }

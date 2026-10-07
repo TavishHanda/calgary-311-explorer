@@ -1,5 +1,7 @@
 # Calgary 311 Explorer
 
+[![Build and test](https://github.com/TavishHanda/calgary-311-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/TavishHanda/calgary-311-explorer/actions/workflows/ci.yml)
+
 A web app for browsing and analyzing the City of Calgary's 311 service requests. It pulls live data from the City's open data portal, stores it locally, and lets you search requests by community, service type and status, and see how long each department takes to close them.
 
 Built with C#, ASP.NET Core Razor Pages, Entity Framework Core and SQLite.
@@ -8,7 +10,7 @@ Built with C#, ASP.NET Core Razor Pages, Entity Framework Core and SQLite.
 
 ## Features
 
-- **Sync from Open Calgary:** loads recent 311 requests from the City's API in pages and updates existing records instead of duplicating them. Later syncs only fetch what changed since the last one.
+- **Sync from Open Calgary:** loads recent 311 requests from the City's API in pages and updates existing records instead of duplicating them. Later syncs only fetch what changed since the last one. Runs automatically when the app starts and every night, or on demand from the home page.
 - **Browse and search:** filter requests by community, service type, status, department and date range, with a detail page for each request.
 - **Dashboard:** requests per week, the most common request types, open vs. closed, and median and average days to close by department, for the whole city or one community.
 - **REST API:** `GET /api/requests?community=Panorama Hills&status=Open` returns matching requests as JSON, with paging.
@@ -93,7 +95,7 @@ dotnet ef database update
 dotnet run
 ```
 
-Open the URL shown in the terminal (usually `http://localhost:5000`), then click **Sync from Open Calgary** on the home page to load the last 90 days of requests. The first sync takes a few minutes; later ones only fetch what changed.
+Open the URL shown in the terminal (usually `http://localhost:5000`). The app starts loading the last 90 days of requests in the background straight away; the first sync takes a few minutes, and later ones only fetch what changed.
 
 ### API
 
@@ -150,6 +152,10 @@ Settings live in `src/Calgary311.Web/appsettings.json` under `OpenCalgary`:
 | `InitialSyncDays` | `90` | How many days of requests the first sync loads |
 | `PageSize` | `5000` | Rows per API request |
 | `AppToken` | empty | Optional [Socrata app token](https://dev.socrata.com/docs/app-tokens.html) for higher rate limits |
+| `AutoSync` | `true` | Sync when the app starts and once a day |
+| `DailySyncTime` | `03:00` | Local time of the daily sync |
+
+GitHub Actions builds the solution and runs the tests on every push to `main` and on pull requests (`.github/workflows/ci.yml`). Warnings fail the build.
 
 ## Project structure
 
@@ -185,7 +191,9 @@ calgary-311-explorer/
 - [x] **8. Tests:** 8–10 xUnit tests on mapping, filters and dashboard calculations (ended up with 36)
 - [x] **9. Docs:** screenshots and a short walkthrough in this README
 
-Next: scheduled daily sync, automated builds and tests with GitHub Actions, deployment to Azure App Service. A map is less useful than planned, since every request in a community shares one point.
+- [x] **Extra:** automatic daily sync, and builds and tests on GitHub Actions
+
+Next: deployment to Azure App Service. A map is less useful than planned, since every request in a community shares one point.
 
 ## What I learned
 

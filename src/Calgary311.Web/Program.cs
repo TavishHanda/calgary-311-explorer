@@ -16,6 +16,7 @@ builder.Services.Configure<OpenCalgaryOptions>(
     builder.Configuration.GetSection(OpenCalgaryOptions.SectionName));
 
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddHostedService<DailySyncService>();
 
 // A typed HttpClient: ASP.NET creates the HttpClient, points it at the API and injects it into ServiceRequestSync.
 builder.Services.AddHttpClient<ServiceRequestSync>((services, client) =>
