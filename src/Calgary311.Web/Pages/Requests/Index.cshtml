@@ -97,6 +97,7 @@
 }
 else
 {
+    <partial name="_AbbreviationLegend" model='Model.Requests.Select(r => r.ServiceName).Concat(Model.Requests.Select(r => r.AgencyResponsible))' />
     <div class="table-wrap">
         <table class="requests">
             <thead>
@@ -114,9 +115,9 @@ else
                 {
                     <tr>
                         <td class="nowrap">@request.RequestedDate.ToString("MMM d, yyyy")</td>
-                        <td><a asp-page="./Details" asp-route-id="@request.ServiceRequestId">@request.ServiceName</a></td>
+                        <td><a asp-page="./Details" asp-route-id="@request.ServiceRequestId"><partial name="_ServiceName" model="request.ServiceName" /></a></td>
                         <td>@request.CommunityName</td>
-                        <td>@request.AgencyResponsible</td>
+                        <td><partial name="_ServiceName" model="request.AgencyResponsible" /></td>
                         <td><partial name="_StatusBadge" model="request.Status" /></td>
                         <td class="number">@request.DaysToClose</td>
                     </tr>

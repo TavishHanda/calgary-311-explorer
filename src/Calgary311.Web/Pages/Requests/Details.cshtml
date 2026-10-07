@@ -39,10 +39,12 @@
     }
 </dl>
 
+<partial name="_AbbreviationLegend" model='new[] { request.ServiceName, request.AgencyResponsible }' />
+
 <table class="details">
-    <tr><th>Service type</th><td>@request.ServiceName</td></tr>
+    <tr><th>Service type</th><td><partial name="_ServiceName" model="request.ServiceName" /></td></tr>
     <tr><th>Status</th><td>@request.Status</td></tr>
-    <tr><th>Department</th><td>@(request.AgencyResponsible ?? "—")</td></tr>
+    <tr><th>Department</th><td><partial name="_ServiceName" model="request.AgencyResponsible" /></td></tr>
     <tr><th>Submitted by</th><td>@(request.Source ?? "—")</td></tr>
     <tr>
         <th>Community</th>

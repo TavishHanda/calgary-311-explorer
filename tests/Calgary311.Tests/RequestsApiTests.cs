@@ -131,6 +131,7 @@ public class RequestsApiTests : IDisposable
         Assert.Equal(new DateTime(2026, 9, 2), summary!.Day);
         Assert.Equal(1, summary.RequestsThatDay);
         Assert.Equal("Roads - Pothole Repair", summary.TopServiceThatDay);
+        Assert.Equal("Roads - Pothole Repair", summary.TopServiceThatDayDescription);
         Assert.Equal(2, summary.OpenRequests);
     }
 

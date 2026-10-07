@@ -117,6 +117,8 @@
     </details>
 </section>
 
+<partial name="_AbbreviationLegend" model='stats.TopServiceTypes.Select(s => s.Label).Concat(stats.Departments.Select(d => d.Department))' />
+
 <div class="panel-grid">
     <section class="panel">
         <h2>Most common request types</h2>
@@ -124,7 +126,7 @@
         <div class="bars">
             @foreach (var item in stats.TopServiceTypes)
             {
-                <a class="bar-label" asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("ServiceName", item.Label)'>@item.Label</a>
+                <a class="bar-label" asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("ServiceName", item.Label)'><partial name="_ServiceName" model="item.Label" /></a>
                 <div class="bar-track" title="@item.Label: @item.Count.ToString("N0") requests">
                     <div class="bar" style="--pct: @DashboardModel.Percent(item.Count, maxServiceType)"></div>
                     <span class="bar-value">@item.Count.ToString("N0")</span>
@@ -172,7 +174,7 @@
                 @foreach (var department in stats.Departments)
                 {
                     <tr>
-                        <td><a asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("Department", department.Department)'>@department.Department</a></td>
+                        <td><a asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("Department", department.Department)'><partial name="_ServiceName" model="department.Department" /></a></td>
                         <td class="number">@department.Requests.ToString("N0")</td>
                         <td class="number">@department.Closed.ToString("N0")</td>
                         <td class="number">@(department.MedianDaysToClose?.ToString("0.#") ?? "—")</td>

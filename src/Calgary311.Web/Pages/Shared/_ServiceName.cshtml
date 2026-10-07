@@ -1,0 +1,15 @@
+@model string?
+@using Calgary311.Web.Services
+@* A service or department name with its abbreviation explained on hover, e.g. "WRS - Cart Management". *@
+@{
+    var split = Abbreviations.Split(Model);
+    var meaning = split is null ? null : Abbreviations.Meaning(split.Value.Code);
+}
+@if (split is { } parts && meaning is not null)
+{
+    <abbr title="@meaning">@parts.Code</abbr><text> - @parts.Name</text>
+}
+else
+{
+    @(Model ?? "—")
+}

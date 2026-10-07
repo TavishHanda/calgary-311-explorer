@@ -1,11 +1,14 @@
 using Calgary311.Web.Data;
+using Calgary311.Web.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Calgary311.Web.Api;
 
 /// <summary>A few headline numbers, small enough for another site (like the portfolio) to show.</summary>
 /// <param name="Day">The most recent full day in the data, or null if there's no data yet.</param>
-public record SummaryResponse(DateTime? Day, int RequestsThatDay, string? TopServiceThatDay, int OpenRequests);
+/// <param name="TopServiceThatDayDescription">The top service with its abbreviation spelled out, e.g. "Waste &amp; Recycling Services: Cart Management".</param>
+public record SummaryResponse(
+    DateTime? Day, int RequestsThatDay, string? TopServiceThatDay, string? TopServiceThatDayDescription, int OpenRequests);
 
 public static class SummaryEndpoints
 {
@@ -26,7 +29,7 @@ public static class SummaryEndpoints
         var newest = await requests.MaxAsync(r => (DateTime?)r.RequestedDate);
         if (newest is null)
         {
-            return new SummaryResponse(null, 0, null, 0);
+            return new SummaryResponse(null, 0, null, null, 0);
         }
 
         // The newest day is usually still filling up, so report the day before it, which is complete.
@@ -44,6 +47,7 @@ public static class SummaryEndpoints
         // LIKE is case-insensitive in SQLite, matching how the dashboard counts open requests.
         var open = await requests.CountAsync(r => EF.Functions.Like(r.Status, "%open%"));
 
-        return new SummaryResponse(day, count, topService, open);
+        var description = topService is null ? null : Abbreviations.Describe(topService);
+        return new SummaryResponse(day, count, topService, description, open);
     }
 }

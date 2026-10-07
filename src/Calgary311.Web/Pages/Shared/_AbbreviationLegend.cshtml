@@ -1,0 +1,18 @@
+@model IEnumerable<string?>
+@using Calgary311.Web.Services
+@* A fold-out list of the abbreviations used in these names. Shows nothing if none are known. *@
+@{
+    var legend = Abbreviations.Legend(Model);
+}
+@if (legend.Count > 0)
+{
+    <details class="legend">
+        <summary>What the abbreviations mean</summary>
+        <dl>
+            @foreach (var (code, meaning) in legend)
+            {
+                <div><dt>@code</dt><dd>@meaning</dd></div>
+            }
+        </dl>
+    </details>
+}

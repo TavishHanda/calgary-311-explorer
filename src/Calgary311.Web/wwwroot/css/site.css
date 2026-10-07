@@ -278,6 +278,31 @@ a.bar-label:hover { color: var(--accent); text-decoration: underline; }
     .column-axis span:nth-child(even) { visibility: hidden; }
 }
 
+/* Abbreviations like "WRS": dotted underline, full name on hover. */
+abbr[title] {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    cursor: help;
+}
+
+.legend {
+    margin: 0 0 16px;
+    font-size: 0.9rem;
+}
+
+.legend summary { cursor: pointer; color: var(--muted); }
+
+.legend dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 4px 24px;
+    margin: 10px 0 0;
+}
+
+.legend dl div { display: flex; gap: 10px; }
+.legend dt { font-weight: 600; min-width: 3.5em; }
+.legend dd { margin: 0; color: var(--muted); }
+
 .site-footer {
     max-width: 1100px;
     margin: 0 auto;
