@@ -60,16 +60,22 @@
             }
         </td>
     </tr>
-    <tr><th>Address</th><td>@(request.Address ?? "—")</td></tr>
+    @* The City leaves address empty in practice, so only show it if one ever turns up. *@
+    @if (request.Address is not null)
+    {
+        <tr><th>Address</th><td>@request.Address</td></tr>
+    }
     <tr><th>Last updated</th><td>@(request.UpdatedDate?.ToString("MMM d, yyyy") ?? "—")</td></tr>
     <tr>
-        <th>Location</th>
+        <th>Approximate location</th>
         <td>
+            @* The City only publishes the centre point of the request's community, never the exact spot. *@
             @if (request.Latitude is double lat && request.Longitude is double lon)
             {
                 var latText = lat.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
                 var lonText = lon.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
-                <a href="https://www.openstreetmap.org/?mlat=@latText&mlon=@lonText#map=16/@latText/@lonText" target="_blank" rel="noopener">@latText, @lonText (map)</a>
+                <a href="https://www.openstreetmap.org/?mlat=@latText&mlon=@lonText#map=14/@latText/@lonText" target="_blank" rel="noopener">Centre of @(request.CommunityName ?? "the community") (map)</a>
+                <div class="muted">The City publishes community centre points only, not exact locations.</div>
             }
             else
             {

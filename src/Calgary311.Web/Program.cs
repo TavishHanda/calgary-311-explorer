@@ -1,4 +1,5 @@
 using Calgary311.Web;
+using Calgary311.Web.Api;
 using Calgary311.Web.Data;
 using Calgary311.Web.Services;
 using Microsoft.EntityFrameworkCore;
@@ -39,7 +40,6 @@ app.UseRouting();
 
 app.MapRazorPages();
 
-// TODO (roadmap step 6): map the API endpoint here, e.g.
-// app.MapGet("/api/requests", ...);
+app.MapRequestsApi();
 
 app.Run();

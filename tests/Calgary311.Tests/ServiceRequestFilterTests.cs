@@ -46,6 +46,14 @@ public class ServiceRequestFilterTests : IDisposable
     }
 
     [Fact]
+    public void Apply_MatchesCommunityAndStatus_IgnoringCase()
+    {
+        var filter = new ServiceRequestFilter { Community = "Panorama Hills", Status = "open" };
+
+        Assert.Equal(["1"], Ids(filter));
+    }
+
+    [Fact]
     public void Apply_MatchesPartOfServiceType_IgnoringCase()
     {
         var filter = new ServiceRequestFilter { ServiceType = "pothole" };

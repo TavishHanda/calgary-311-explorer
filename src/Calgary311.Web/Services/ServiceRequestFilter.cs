@@ -5,21 +5,21 @@ namespace Calgary311.Web.Services;
 
 /// <summary>
 /// Search filters for service requests. Every filter is optional; empty ones are ignored.
-/// Bound from the query string, e.g. ?Community=PANORAMA HILLS&amp;Status=Open.
-/// Shared by the Browse page and (later) the API endpoint.
+/// Bound from the query string, e.g. ?Community=Panorama Hills&amp;Status=Open.
+/// Shared by the Browse page and the /api/requests endpoint.
 /// </summary>
 public class ServiceRequestFilter
 {
-    /// <summary>Exact community name.</summary>
+    /// <summary>Community name, e.g. "Panorama Hills". Not case-sensitive.</summary>
     public string? Community { get; set; }
 
     /// <summary>Part of the service name, e.g. "pothole". Not case-sensitive.</summary>
     public string? ServiceType { get; set; }
 
-    /// <summary>Exact status, e.g. "Open".</summary>
+    /// <summary>Status, e.g. "Open". Not case-sensitive.</summary>
     public string? Status { get; set; }
 
-    /// <summary>Exact department (agency_responsible).</summary>
+    /// <summary>Department (agency_responsible). Not case-sensitive.</summary>
     public string? Department { get; set; }
 
     /// <summary>Earliest requested date, inclusive.</summary>
@@ -36,7 +36,8 @@ public class ServiceRequestFilter
     {
         if (!string.IsNullOrWhiteSpace(Community))
         {
-            requests = requests.Where(r => r.CommunityName == Community);
+            // The City stores names in capitals ("PANORAMA HILLS"); NOCASE lets "Panorama Hills" match too.
+            requests = requests.Where(r => EF.Functions.Collate(r.CommunityName, "NOCASE") == Community.Trim());
         }
 
         if (!string.IsNullOrWhiteSpace(ServiceType))
@@ -47,12 +48,12 @@ public class ServiceRequestFilter
 
         if (!string.IsNullOrWhiteSpace(Status))
         {
-            requests = requests.Where(r => r.Status == Status);
+            requests = requests.Where(r => EF.Functions.Collate(r.Status, "NOCASE") == Status.Trim());
         }
 
         if (!string.IsNullOrWhiteSpace(Department))
         {
-            requests = requests.Where(r => r.AgencyResponsible == Department);
+            requests = requests.Where(r => EF.Functions.Collate(r.AgencyResponsible, "NOCASE") == Department.Trim());
         }
 
         if (From is DateTime from)

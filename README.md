@@ -63,16 +63,52 @@ https://data.calgary.ca/resource/iahh-g8bj.json?$order=requested_date DESC&$limi
 git clone https://github.com/TavishHanda/calgary-311-explorer.git
 cd calgary-311-explorer
 
-# First time only: install the EF Core tools and create the database
+# First time only: install the EF Core tools and create the database from the migrations
 dotnet tool install --global dotnet-ef
 cd src/Calgary311.Web
-dotnet ef migrations add InitialCreate
 dotnet ef database update
 
 dotnet run
 ```
 
-Open the URL shown in the terminal (usually `https://localhost:5001`).
+Open the URL shown in the terminal (usually `http://localhost:5000`), then click **Sync from Open Calgary** on the home page to load the last 90 days of requests. The first sync takes a few minutes; later ones only fetch what changed.
+
+### API
+
+All endpoints return JSON.
+
+| Endpoint | What it returns |
+| --- | --- |
+| `GET /api/requests` | A page of requests, newest first |
+| `GET /api/requests/{id}` | One request by its City ID, or 404 |
+
+`/api/requests` takes the same filters as the Browse page, all optional and not case-sensitive: `community`, `serviceType` (matches part of the name), `status`, `department`, `from` and `to` (dates, `yyyy-MM-dd`), plus `page` and `pageSize` (default 50, max 500).
+
+```
+GET /api/requests?community=Panorama Hills&status=Open&pageSize=2
+```
+
+```json
+{
+  "page": 1,
+  "pageSize": 2,
+  "totalCount": 126,
+  "totalPages": 63,
+  "items": [
+    {
+      "serviceRequestId": "26-00746540",
+      "requestedDate": "2026-10-01T00:00:00",
+      "closedDate": null,
+      "daysToClose": null,
+      "status": "Open",
+      "serviceName": "Bylaw - Material on Public Property",
+      "agencyResponsible": "CS - Emergency Management and Community Safety",
+      "communityName": "PANORAMA HILLS",
+      "...": "..."
+    }
+  ]
+}
+```
 
 ### Run the tests
 
@@ -120,7 +156,7 @@ calgary-311-explorer/
 - [x] **3. Sync service:** fetch requests from the API in pages, map JSON to `ServiceRequest`, insert new rows and update changed ones; a button or command to run it
 - [x] **4. Browse page:** table of requests with filters (community, service type, status, department, date range) and paging
 - [x] **5. Request detail page:** everything known about one request
-- [ ] **6. API endpoint:** `GET /api/requests` with the same filters
+- [x] **6. API endpoint:** `GET /api/requests` with the same filters
 - [ ] **7. Dashboard:** top service types, open vs. closed, average days to close by department
 - [ ] **8. Tests:** 8–10 xUnit tests on mapping, filters and dashboard calculations
 - [ ] **9. Docs:** screenshots and a short walkthrough in this README
