@@ -116,7 +116,7 @@ calgary-311-explorer/
 ## Roadmap
 
 - [x] **1. Setup:** solution, web and test projects, `ServiceRequest` model, `AppDbContext`, starter page
-- [ ] **2. Database:** first migration (`InitialCreate`) and database created locally
+- [x] **2. Database:** first migration (`InitialCreate`) and database created locally
 - [ ] **3. Sync service:** fetch requests from the API in pages, map JSON to `ServiceRequest`, insert new rows and update changed ones; a button or command to run it
 - [ ] **4. Browse page:** table of requests with filters (community, service type, status, department, date range) and paging
 - [ ] **5. Request detail page:** everything known about one request
