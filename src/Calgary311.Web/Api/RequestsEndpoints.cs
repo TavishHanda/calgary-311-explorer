@@ -1,4 +1,5 @@
 using Calgary311.Web.Data;
+using Calgary311.Web.Models;
 using Calgary311.Web.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -35,14 +36,15 @@ public static class RequestsEndpoints
         var query = filter.Apply(db.ServiceRequests.AsNoTracking());
         var totalCount = await query.CountAsync();
 
-        var requests = await query
-            .OrderByDescending(r => r.RequestedDate)
-            .ThenByDescending(r => r.ServiceRequestId)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        // Past the last page there's nothing to fetch. Checking first (in long arithmetic) also stops a huge
+        // page number from overflowing int in GetPage and wrapping round to a negative offset, which SQLite
+        // treats as 0, so ?page=100000000 would have returned page 1.
+        var offset = (long)(page - 1) * pageSize;
+        List<ServiceRequest> requests = offset < totalCount
+            ? await query.NewestFirst().GetPage(page, pageSize).ToListAsync()
+            : [];
 
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var totalPages = ServiceRequestQueries.PageCount(totalCount, pageSize);
         var items = requests.Select(ServiceRequestDto.From).ToList();
         return TypedResults.Ok(new PagedResponse<ServiceRequestDto>(page, pageSize, totalCount, totalPages, items));
     }

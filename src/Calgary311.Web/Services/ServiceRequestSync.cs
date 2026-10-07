@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using Calgary311.Web.Data;
 using Calgary311.Web.Models;
@@ -86,10 +87,12 @@ public class ServiceRequestSync(
     private async Task<List<SocrataServiceRequest>> FetchPageAsync(
         string where, int offset, CancellationToken cancellationToken)
     {
-        // Ordering by the unique ID keeps pages stable, so $offset never skips or repeats rows.
+        // Oldest update first, so if a sync stops partway, everything saved is older than everything not yet
+        // saved. The next sync asks for "updated since the newest stored", so it picks up where this one
+        // stopped instead of leaving a gap. The unique ID breaks ties so $offset never skips or repeats rows.
         var url = $"{_options.DatasetId}.json"
             + $"?$where={Uri.EscapeDataString(where)}"
-            + $"&$order=service_request_id"
+            + $"&$order={Uri.EscapeDataString("updated_date,service_request_id")}"
             + $"&$limit={_options.PageSize}"
             + $"&$offset={offset}";
 
@@ -136,5 +139,6 @@ public class ServiceRequestSync(
         return (added, updated);
     }
 
-    private static string FormatDate(DateTime date) => date.ToString("yyyy-MM-ddTHH:mm:ss");
+    // InvariantCulture so the API always gets 2026-10-01T00:00:00, whatever the machine's region settings.
+    private static string FormatDate(DateTime date) => date.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
 }

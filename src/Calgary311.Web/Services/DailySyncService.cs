@@ -60,9 +60,12 @@ public class DailySyncService(
                 logger.LogInformation("Skipped automatic sync: a sync is already running");
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
         {
             // Log and carry on, so one failed run (e.g. the City's API is down) doesn't stop tomorrow's.
+            // The filter only lets the error through when the app really is shutting down. Checking the
+            // exception type instead isn't enough: an HttpClient timeout is also an OperationCanceledException,
+            // and letting that escape would stop the whole app.
             logger.LogError(ex, "Automatic sync failed");
         }
     }

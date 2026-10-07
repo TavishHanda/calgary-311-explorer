@@ -27,7 +27,7 @@ public class DetailsModel(AppDbContext db) : PageModel
         }
 
         ServiceRequest = request;
-        if (request.ClosedDate is null)
+        if (!request.IsClosed)
         {
             DaysOpen = (DateTime.Today - request.RequestedDate.Date).Days;
         }

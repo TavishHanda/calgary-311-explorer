@@ -3,14 +3,19 @@ using Calgary311.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Calgary311.Web.Pages;
 
-public class IndexModel(AppDbContext db, ILogger<IndexModel> logger) : PageModel
+public class IndexModel(AppDbContext db, IOptions<OpenCalgaryOptions> options, ILogger<IndexModel> logger) : PageModel
 {
     public int TotalRequests { get; private set; }
     public DateTime? NewestRequest { get; private set; }
     public string? SetupMessage { get; private set; }
+
+    // Settings for the empty-database message.
+    public int InitialSyncDays => options.Value.InitialSyncDays;
+    public bool AutoSync => options.Value.AutoSync;
 
     /// <summary>Result of the last sync, kept across the redirect back to this page.</summary>
     [TempData]
@@ -26,9 +31,9 @@ public class IndexModel(AppDbContext db, ILogger<IndexModel> logger) : PageModel
         }
         catch (Exception ex)
         {
-            // Most likely the database hasn't been created yet.
+            // Most likely the database hasn't been created yet. The migrations are in the repo, so applying them is enough.
             logger.LogWarning(ex, "Could not read the database");
-            SetupMessage = "Couldn't read the database. Create it with: dotnet ef migrations add InitialCreate, then dotnet ef database update (run both in src/Calgary311.Web).";
+            SetupMessage = "Couldn't read the database. If it hasn't been created yet, run: dotnet ef database update (in src/Calgary311.Web), then restart the app.";
         }
     }
 
@@ -42,10 +47,12 @@ public class IndexModel(AppDbContext db, ILogger<IndexModel> logger) : PageModel
                 ? "A sync is already running. Refresh in a minute to see the new data."
                 : $"Sync finished: {result.Added:N0} new requests, {result.Updated:N0} updated.";
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
+            // Any failure (the API timing out or changing its format, a database error) becomes a message on
+            // the page rather than an error page. The filter skips the case where the browser itself gave up.
             logger.LogError(ex, "Sync failed");
-            SyncMessage = "Sync failed: couldn't get data from the City's API. Check the app's log for details.";
+            SyncMessage = "Sync failed. The City's API may be slow or unavailable; check the app's log for details.";
         }
 
         return RedirectToPage();

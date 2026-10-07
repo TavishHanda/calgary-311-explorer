@@ -2,11 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Calgary311.Web.Api;
-using Calgary311.Web.Data;
 using Calgary311.Web.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 
 namespace Calgary311.Tests;
 
@@ -14,26 +11,22 @@ namespace Calgary311.Tests;
 // The app's connection string is swapped for a shared in-memory SQLite database seeded with a few requests.
 public class RequestsApiTests : IDisposable
 {
-    private readonly SqliteConnection _keepAlive;
+    private readonly TestDatabase _database;
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public RequestsApiTests()
     {
-        // "Cache=Shared" lets the app's connections see this database; it lasts as long as one connection is open.
+        // "Cache=Shared" lets the app's own connections open this same named database.
+        // _database keeps one connection open, which keeps the database alive for the whole test.
         var connectionString = $"DataSource=api-tests-{Guid.NewGuid()};Mode=Memory;Cache=Shared";
-        _keepAlive = new SqliteConnection(connectionString);
-        _keepAlive.Open();
+        _database = new TestDatabase(connectionString);
 
-        using (var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_keepAlive).Options))
-        {
-            db.Database.EnsureCreated();
-            db.ServiceRequests.AddRange(
-                Request("A", "PANORAMA HILLS", "Open", new DateTime(2026, 9, 1)),
-                Request("B", "PANORAMA HILLS", "Closed", new DateTime(2026, 9, 2), closed: new DateTime(2026, 9, 5)),
-                Request("C", "BOWNESS", "Open", new DateTime(2026, 9, 3)));
-            db.SaveChanges();
-        }
+        _database.Db.ServiceRequests.AddRange(
+            Request("A", "PANORAMA HILLS", "Open", new DateTime(2026, 9, 1)),
+            Request("B", "PANORAMA HILLS", "Closed", new DateTime(2026, 9, 2), closed: new DateTime(2026, 9, 5)),
+            Request("C", "BOWNESS", "Open", new DateTime(2026, 9, 3)));
+        _database.Db.SaveChanges();
 
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder => builder
@@ -47,7 +40,7 @@ public class RequestsApiTests : IDisposable
     {
         _client.Dispose();
         _factory.Dispose();
-        _keepAlive.Dispose();
+        _database.Dispose();
     }
 
     [Fact]
@@ -70,6 +63,29 @@ public class RequestsApiTests : IDisposable
         Assert.Equal(3, response!.TotalCount);
         Assert.Equal(2, response.TotalPages);
         Assert.Equal("A", Assert.Single(response.Items).ServiceRequestId);
+    }
+
+    [Theory]
+    [InlineData("/api/requests?page=3&pageSize=2")]
+    [InlineData("/api/requests?page=100000000&pageSize=500")] // (page - 1) * pageSize would overflow int
+    public async Task List_ReturnsNoItems_PastTheLastPage(string url)
+    {
+        var response = await _client.GetFromJsonAsync<PagedResponse<ServiceRequestDto>>(url);
+
+        Assert.Empty(response!.Items);
+        Assert.Equal(3, response.TotalCount);
+    }
+
+    [Fact]
+    public async Task Get_ReturnsNoDaysToClose_ForAReopenedRequest()
+    {
+        _database.Db.ServiceRequests.Add(Request("D", "BOWNESS", "Open", new DateTime(2026, 9, 1), closed: new DateTime(2026, 9, 4)));
+        _database.Db.SaveChanges();
+
+        var request = await _client.GetFromJsonAsync<ServiceRequestDto>("/api/requests/D");
+
+        Assert.Equal("Open", request!.Status);
+        Assert.Null(request.DaysToClose);
     }
 
     [Fact]

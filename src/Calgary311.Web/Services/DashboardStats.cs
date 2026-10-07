@@ -1,3 +1,5 @@
+using Calgary311.Web.Models;
+
 namespace Calgary311.Web.Services;
 
 /// <summary>The few columns the dashboard needs from each request.</summary>
@@ -45,7 +47,7 @@ public static class DashboardCalculator
             Total: rows.Count,
             Open: rows.Count(IsOpen),
             Closed: closedRows.Count,
-            AverageDaysToClose: daysToClose.Count > 0 ? daysToClose.Average() : null,
+            AverageDaysToClose: AverageOrNull(daysToClose),
             MedianDaysToClose: Median(daysToClose),
             Statuses: CountBy(rows, r => r.Status).ToList(),
             TopServiceTypes: CountBy(rows, r => r.ServiceName).Take(TopServiceTypeCount).ToList(),
@@ -55,7 +57,7 @@ public static class DashboardCalculator
 
     public static bool IsOpen(DashboardRow row) => row.Status.Contains("Open", StringComparison.OrdinalIgnoreCase);
 
-    public static bool IsClosed(DashboardRow row) => row.Status.Contains("Closed", StringComparison.OrdinalIgnoreCase);
+    public static bool IsClosed(DashboardRow row) => ServiceRequest.IsClosedStatus(row.Status);
 
     /// <summary>Monday of the week containing the date.</summary>
     public static DateTime WeekStart(DateTime date)
@@ -65,6 +67,7 @@ public static class DashboardCalculator
         return date.Date.AddDays(-daysSinceMonday);
     }
 
+    /// <summary>The middle value (the mean of the two middle values for an even count), or null for an empty list.</summary>
     public static double? Median(List<int> values)
     {
         if (values.Count == 0)
@@ -78,6 +81,9 @@ public static class DashboardCalculator
             ? sorted[middle]
             : (sorted[middle - 1] + sorted[middle]) / 2.0;
     }
+
+    // LINQ's Average() throws on an empty list, so return null instead, like Median does.
+    private static double? AverageOrNull(List<int> values) => values.Count > 0 ? values.Average() : null;
 
     // Whole days, matching ServiceRequest.DaysToClose. Closed requests without a closed date are skipped.
     private static List<int> DaysToClose(IEnumerable<DashboardRow> closedRows) =>
@@ -104,7 +110,7 @@ public static class DashboardCalculator
                     g.Key,
                     Requests: g.Count(),
                     Closed: closed.Count,
-                    AverageDaysToClose: days.Count > 0 ? days.Average() : null,
+                    AverageDaysToClose: AverageOrNull(days),
                     MedianDaysToClose: Median(days));
             })
             .OrderByDescending(d => d.Requests)

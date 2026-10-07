@@ -14,7 +14,7 @@ Built with C#, ASP.NET Core Razor Pages, Entity Framework Core and SQLite.
 - **Browse and search:** filter requests by community, service type, status, department and date range, with a detail page for each request.
 - **Dashboard:** requests per week, the most common request types, open vs. closed, and median and average days to close by department, for the whole city or one community.
 - **REST API:** `GET /api/requests?community=Panorama Hills&status=Open` returns matching requests as JSON, with paging.
-- **Tests:** 36 xUnit tests covering data mapping, the sync, filters, dashboard calculations and the API (integration tests that run the whole app in memory).
+- **Tests:** 54 xUnit tests covering data mapping, the sync (including resuming after an interrupted one), filters, dashboard calculations, the background sync and the API (integration tests that run the whole app in memory).
 
 ## Walkthrough
 
@@ -30,7 +30,7 @@ Built with C#, ASP.NET Core Razor Pages, Entity Framework Core and SQLite.
 
 ![Request detail page](docs/screenshots/details.png)
 
-**4. See the patterns.** The dashboard (top of this page) summarizes every request or one community's. Clicking a request type, status or department opens Browse with that filter applied.
+**4. See the patterns.** The dashboard (top of this page) summarizes every request or one community's. Clicking a request type, status or department opens Browse showing exactly the requests behind that bar.
 
 ## The data
 
@@ -79,7 +79,7 @@ Things worth knowing about the data:
 ### Prerequisites
 
 - [.NET SDK](https://dotnet.microsoft.com/download) (10.0 or later)
-- Visual Studio 2022 or later with the **ASP.NET and web development** workload, or VS Code with the C# Dev Kit extension
+- Visual Studio 2026 or later (Visual Studio 2022 can't build .NET 10 projects) with the **ASP.NET and web development** workload, or VS Code with the C# Dev Kit extension
 
 ### Run it locally
 
@@ -106,7 +106,7 @@ All endpoints return JSON.
 | `GET /api/requests` | A page of requests, newest first |
 | `GET /api/requests/{id}` | One request by its City ID, or 404 |
 
-`/api/requests` takes the same filters as the Browse page, all optional and not case-sensitive: `community`, `serviceType` (matches part of the name), `status`, `department`, `from` and `to` (dates, `yyyy-MM-dd`), plus `page` and `pageSize` (default 50, max 500).
+`/api/requests` takes the same filters as the Browse page, all optional and not case-sensitive: `community`, `serviceType` (matches part of the name), `serviceName` (exact name), `status`, `department`, `from` and `to` (dates, `yyyy-MM-dd`), plus `page` and `pageSize` (default 50, max 500).
 
 ```
 GET /api/requests?community=Panorama Hills&status=Open&pageSize=2
@@ -188,7 +188,7 @@ calgary-311-explorer/
 - [x] **5. Request detail page:** everything known about one request
 - [x] **6. API endpoint:** `GET /api/requests` with the same filters
 - [x] **7. Dashboard:** top service types, open vs. closed, average days to close by department
-- [x] **8. Tests:** 8–10 xUnit tests on mapping, filters and dashboard calculations (ended up with 36)
+- [x] **8. Tests:** 8–10 xUnit tests on mapping, filters and dashboard calculations (ended up with 54)
 - [x] **9. Docs:** screenshots and a short walkthrough in this README
 
 - [x] **Extra:** automatic daily sync, and builds and tests on GitHub Actions

@@ -33,10 +33,19 @@ else
     {
         <p><a asp-page="/Requests/Index">Browse and search all @Model.TotalRequests.ToString("N0") requests →</a></p>
     }
-
-    @if (Model.TotalRequests == 0)
+    else
     {
-        <p>The database is empty. Sync to load the last 90 days of requests from the City's API. The first sync takes a minute or two.</p>
+        @if (Model.AutoSync)
+        {
+            <p>
+                The database is empty. The app loads the last @Model.InitialSyncDays days of requests from the City's API
+                in the background when it starts, which takes a few minutes. Refresh to check on it, or sync now.
+            </p>
+        }
+        else
+        {
+            <p>The database is empty. Sync to load the last @Model.InitialSyncDays days of requests from the City's API (a few minutes).</p>
+        }
     }
 
     <form method="post" asp-page-handler="Sync" class="sync-form"

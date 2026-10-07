@@ -49,9 +49,20 @@ public class ServiceRequest
     public double? Latitude { get; set; }
 
     /// <summary>
-    /// Whole days between the request and its closure, or null while it's still open.
+    /// Whether the request is closed, going by its status ("Closed" or "Duplicate (Closed)").
+    /// The status decides, not ClosedDate: reopened requests say "Open" but keep their old closed date.
+    /// Not stored in the database.
+    /// </summary>
+    public bool IsClosed => IsClosedStatus(Status);
+
+    /// <summary>
+    /// Whole days between the request and its closure, or null while it's open (including reopened requests).
     /// Not stored in the database.
     /// </summary>
     public int? DaysToClose =>
-        ClosedDate.HasValue ? (ClosedDate.Value.Date - RequestedDate.Date).Days : null;
+        IsClosed && ClosedDate.HasValue ? (ClosedDate.Value.Date - RequestedDate.Date).Days : null;
+
+    /// <summary>The one place that decides whether a status counts as closed. Also used by the dashboard.</summary>
+    public static bool IsClosedStatus(string status) =>
+        status.Contains("Closed", StringComparison.OrdinalIgnoreCase);
 }

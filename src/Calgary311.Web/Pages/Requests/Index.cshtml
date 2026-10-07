@@ -1,5 +1,6 @@
 @page
 @model Calgary311.Web.Pages.Requests.IndexModel
+@using Calgary311.Web.Services
 @{
     ViewData["Title"] = "Browse";
 }
@@ -54,19 +55,33 @@
 
     <label>
         From
-        <input type="date" name="From" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" />
+        <input type="date" name="From" value="@ServiceRequestFilter.IsoDate(Model.Filter.From)" />
     </label>
 
     <label>
         To
-        <input type="date" name="To" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" />
+        <input type="date" name="To" value="@ServiceRequestFilter.IsoDate(Model.Filter.To)" />
     </label>
+
+    @* Set by the dashboard's links. Kept as a hidden field so changing another filter doesn't drop it. *@
+    @if (!string.IsNullOrWhiteSpace(Model.Filter.ServiceName))
+    {
+        <input type="hidden" name="ServiceName" value="@Model.Filter.ServiceName" />
+    }
 
     <div class="filter-actions">
         <button type="submit" class="button">Search</button>
         <a asp-page="./Index">Clear</a>
     </div>
 </form>
+
+@if (!string.IsNullOrWhiteSpace(Model.Filter.ServiceName))
+{
+    <p class="result-count">
+        Only “@Model.Filter.ServiceName” requests ·
+        <a asp-page="./Index" asp-all-route-data="Model.RouteValuesWithoutServiceName()">show all service types</a>
+    </p>
+}
 
 <p class="result-count">
     @Model.TotalCount.ToString("N0") @(Model.TotalCount == 1 ? "request" : "requests")

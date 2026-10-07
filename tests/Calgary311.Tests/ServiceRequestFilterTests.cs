@@ -1,40 +1,77 @@
-using Calgary311.Web.Data;
+using System.Globalization;
 using Calgary311.Web.Models;
 using Calgary311.Web.Services;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 
 namespace Calgary311.Tests;
 
 // Runs the filters against a real (in-memory) SQLite database, so the SQL EF generates is tested too.
 public class ServiceRequestFilterTests : IDisposable
 {
-    private readonly SqliteConnection _connection = new("DataSource=:memory:");
-    private readonly AppDbContext _db;
+    private readonly TestDatabase _database = new();
 
     public ServiceRequestFilterTests()
     {
-        _connection.Open();
-        _db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options);
-        _db.Database.EnsureCreated();
-
-        _db.ServiceRequests.AddRange(
+        _database.Db.ServiceRequests.AddRange(
             Request("1", "Roads - Pothole Repair", "PANORAMA HILLS", "Open", "OS - Mobility", new DateTime(2026, 9, 1, 8, 0, 0)),
             Request("2", "Roads - Pothole Repair", "BOWNESS", "Closed", "OS - Mobility", new DateTime(2026, 9, 15)),
             Request("3", "WRS - Cart Management", "PANORAMA HILLS", "Closed", "OS - Waste and Recycling Services", new DateTime(2026, 9, 30, 23, 0, 0)));
-        _db.SaveChanges();
+        _database.Db.SaveChanges();
     }
 
-    public void Dispose()
-    {
-        _db.Dispose();
-        _connection.Dispose();
-    }
+    public void Dispose() => _database.Dispose();
 
     [Fact]
     public void Apply_WithNoFilters_ReturnsEverything()
     {
         Assert.Equal(["1", "2", "3"], Ids(new ServiceRequestFilter()));
+    }
+
+    [Fact]
+    public void Apply_ServiceName_MatchesOnlyTheExactName()
+    {
+        AddRequests(
+            Request("10", "WATS - Fire Hydrant", "BOWNESS", "Open", "OS - Water Services", new DateTime(2026, 9, 2)),
+            Request("11", "WATS - Fire Hydrant Flow Test", "BOWNESS", "Open", "OS - Water Services", new DateTime(2026, 9, 3)));
+
+        // A partial match would also return 11, so the dashboard's links use the exact name.
+        Assert.Equal(["10"], Ids(new ServiceRequestFilter { ServiceName = "wats - fire hydrant" }));
+        Assert.Equal(["10", "11"], Ids(new ServiceRequestFilter { ServiceType = "Fire Hydrant" }));
+    }
+
+    [Fact]
+    public void Apply_ServiceType_TreatsWildcardsAsOrdinaryCharacters()
+    {
+        AddRequests(Request("10", "Parks - 100% Tree Survey", "BOWNESS", "Open", "OS - Parks", new DateTime(2026, 9, 2)));
+
+        // Unescaped, "%" and "_" are LIKE wildcards and would match every request.
+        Assert.Equal(["10"], Ids(new ServiceRequestFilter { ServiceType = "100%" }));
+        Assert.Empty(Ids(new ServiceRequestFilter { ServiceType = "_" }));
+    }
+
+    [Fact]
+    public void ToRouteValues_KeepsOnlyFiltersWithValues_WithIsoDates()
+    {
+        var filter = new ServiceRequestFilter { Community = "BOWNESS", Status = " ", From = new DateTime(2026, 9, 15) };
+
+        Assert.Equal(
+            new Dictionary<string, string> { ["Community"] = "BOWNESS", ["From"] = "2026-09-15" },
+            filter.ToRouteValues());
+    }
+
+    [Fact]
+    public void IsoDate_IsTheSame_WhateverTheMachinesRegion()
+    {
+        var original = CultureInfo.CurrentCulture;
+        try
+        {
+            // Thai uses the Buddhist calendar, so a culture-dependent format would give 2569.
+            CultureInfo.CurrentCulture = new CultureInfo("th-TH");
+            Assert.Equal("2026-09-15", ServiceRequestFilter.IsoDate(new DateTime(2026, 9, 15)));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
     }
 
     [Fact]
@@ -78,8 +115,14 @@ public class ServiceRequestFilterTests : IDisposable
         Assert.Equal(["2", "3"], Ids(filter));
     }
 
+    private void AddRequests(params ServiceRequest[] requests)
+    {
+        _database.Db.ServiceRequests.AddRange(requests);
+        _database.Db.SaveChanges();
+    }
+
     private List<string> Ids(ServiceRequestFilter filter) =>
-        filter.Apply(_db.ServiceRequests).Select(r => r.ServiceRequestId).OrderBy(id => id).ToList();
+        filter.Apply(_database.Db.ServiceRequests).Select(r => r.ServiceRequestId).OrderBy(id => id).ToList();
 
     private static ServiceRequest Request(
         string id, string serviceName, string community, string status, string department, DateTime requested) =>

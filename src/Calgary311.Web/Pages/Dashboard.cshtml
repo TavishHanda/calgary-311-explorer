@@ -17,6 +17,10 @@
     {
         <span>· @(Model.Filter.From?.ToString("MMM d, yyyy") ?? "start") to @(Model.Filter.To?.ToString("MMM d, yyyy") ?? "today")</span>
     }
+    @foreach (var extra in Model.ExtraFilters())
+    {
+        <span>· @extra</span>
+    }
 </p>
 
 <form method="get" class="filters">
@@ -32,12 +36,17 @@
     </label>
     <label>
         From
-        <input type="date" name="From" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" />
+        <input type="date" name="From" value="@ServiceRequestFilter.IsoDate(Model.Filter.From)" />
     </label>
     <label>
         To
-        <input type="date" name="To" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" />
+        <input type="date" name="To" value="@ServiceRequestFilter.IsoDate(Model.Filter.To)" />
     </label>
+    @* Keep filters the form doesn't show (from a hand-edited URL) when Update is clicked; Clear drops them. *@
+    @foreach (var (name, value) in Model.Filter.ToRouteValues().Where(v => v.Key is not ("Community" or "From" or "To")))
+    {
+        <input type="hidden" name="@name" value="@value" />
+    }
     <div class="filter-actions">
         <button type="submit" class="button">Update</button>
         <a asp-page="/Dashboard">Clear</a>
@@ -115,7 +124,7 @@
         <div class="bars">
             @foreach (var item in stats.TopServiceTypes)
             {
-                <a class="bar-label" asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("ServiceType", item.Label)'>@item.Label</a>
+                <a class="bar-label" asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("ServiceName", item.Label)'>@item.Label</a>
                 <div class="bar-track" title="@item.Label: @item.Count.ToString("N0") requests">
                     <div class="bar" style="--pct: @DashboardModel.Percent(item.Count, maxServiceType)"></div>
                     <span class="bar-value">@item.Count.ToString("N0")</span>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Calgary311.Web.Data;
 using Calgary311.Web.Models;
 using Calgary311.Web.Services;
@@ -21,7 +22,9 @@ public class IndexModel(AppDbContext db) : PageModel
 
     public List<ServiceRequest> Requests { get; private set; } = [];
     public int TotalCount { get; private set; }
-    public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+
+    // At least 1, so the Math.Clamp in OnGetAsync still has a valid range when nothing matches.
+    public int TotalPages => Math.Max(1, ServiceRequestQueries.PageCount(TotalCount, PageSize));
 
     // Options for the dropdowns.
     public List<string> Communities { get; private set; } = [];
@@ -37,16 +40,14 @@ public class IndexModel(AppDbContext db) : PageModel
         PageNumber = Math.Clamp(PageNumber, 1, TotalPages);
 
         Requests = await query
-            .OrderByDescending(r => r.RequestedDate)
-            .ThenByDescending(r => r.ServiceRequestId)
-            .Skip((PageNumber - 1) * PageSize)
-            .Take(PageSize)
+            .NewestFirst()
+            .GetPage(PageNumber, PageSize)
             .ToListAsync();
 
-        Communities = await DistinctValuesAsync(r => r.CommunityName);
-        Statuses = await DistinctValuesAsync(r => r.Status);
-        Departments = await DistinctValuesAsync(r => r.AgencyResponsible);
-        ServiceTypes = await DistinctValuesAsync(r => r.ServiceName);
+        Communities = await db.ServiceRequests.DistinctValuesAsync(r => r.CommunityName);
+        Statuses = await db.ServiceRequests.DistinctValuesAsync(r => r.Status);
+        Departments = await db.ServiceRequests.DistinctValuesAsync(r => r.AgencyResponsible);
+        ServiceTypes = await db.ServiceRequests.DistinctValuesAsync(r => r.ServiceName);
     }
 
     /// <summary>
@@ -54,27 +55,16 @@ public class IndexModel(AppDbContext db) : PageModel
     /// </summary>
     public Dictionary<string, string> RouteValuesFor(int page)
     {
-        var values = new Dictionary<string, string>
-        {
-            ["Community"] = Filter.Community ?? "",
-            ["ServiceType"] = Filter.ServiceType ?? "",
-            ["Status"] = Filter.Status ?? "",
-            ["Department"] = Filter.Department ?? "",
-            ["From"] = Filter.From?.ToString("yyyy-MM-dd") ?? "",
-            ["To"] = Filter.To?.ToString("yyyy-MM-dd") ?? "",
-            ["pageNumber"] = page.ToString()
-        };
-
-        // Leave out empty filters so the URL stays short.
-        return values.Where(v => v.Value != "").ToDictionary();
+        var values = Filter.ToRouteValues();
+        values["pageNumber"] = page.ToString(CultureInfo.InvariantCulture);
+        return values;
     }
 
-    private Task<List<string>> DistinctValuesAsync(System.Linq.Expressions.Expression<Func<ServiceRequest, string?>> column) =>
-        db.ServiceRequests
-            .Select(column)
-            .Where(v => v != null && v != "")
-            .Distinct()
-            .OrderBy(v => v)
-            .Select(v => v!)
-            .ToListAsync();
+    /// <summary>The current filters without the exact service name, for the "show all types" link.</summary>
+    public Dictionary<string, string> RouteValuesWithoutServiceName()
+    {
+        var values = Filter.ToRouteValues();
+        values.Remove(nameof(ServiceRequestFilter.ServiceName));
+        return values;
+    }
 }

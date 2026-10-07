@@ -1,5 +1,6 @@
 @page "{id}"
 @model Calgary311.Web.Pages.Requests.DetailsModel
+@using System.Globalization
 @{
     var request = Model.ServiceRequest;
     ViewData["Title"] = request.ServiceName;
@@ -72,8 +73,8 @@
             @* The City only publishes the centre point of the request's community, never the exact spot. *@
             @if (request.Latitude is double lat && request.Longitude is double lon)
             {
-                var latText = lat.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
-                var lonText = lon.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
+                var latText = lat.ToString("0.#####", CultureInfo.InvariantCulture);
+                var lonText = lon.ToString("0.#####", CultureInfo.InvariantCulture);
                 <a href="https://www.openstreetmap.org/?mlat=@latText&mlon=@lonText#map=14/@latText/@lonText" target="_blank" rel="noopener">Centre of @(request.CommunityName ?? "the community") (map)</a>
                 <div class="muted">The City publishes community centre points only, not exact locations.</div>
             }
