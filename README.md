@@ -6,6 +6,8 @@ A web app for browsing and analyzing the City of Calgary's 311 service requests.
 
 Built with C#, ASP.NET Core Razor Pages, Entity Framework Core and SQLite.
 
+**Live demo:** https://calgary-311-explorer-aae0dnhnheb2ezf9.westus-01.azurewebsites.net (on Azure's free tier, so the first visit after a quiet spell can take a few seconds to wake up)
+
 ![Dashboard](docs/screenshots/dashboard.png)
 
 ## Features
