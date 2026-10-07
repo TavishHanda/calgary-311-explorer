@@ -4,19 +4,35 @@ A web app for browsing and analyzing the City of Calgary's 311 service requests.
 
 Built with C#, ASP.NET Core Razor Pages, Entity Framework Core and SQLite.
 
-> **Status:** in development. See the [roadmap](#roadmap) for progress.
+![Dashboard](docs/screenshots/dashboard.png)
 
 ## Features
 
-- **Sync from Open Calgary:** loads recent 311 requests from the City's API and updates existing records on each run instead of duplicating them.
+- **Sync from Open Calgary:** loads recent 311 requests from the City's API in pages and updates existing records instead of duplicating them. Later syncs only fetch what changed since the last one.
 - **Browse and search:** filter requests by community, service type, status, department and date range, with a detail page for each request.
-- **Dashboard:** most common request types, open vs. closed counts, and average days to close by department.
-- **REST endpoint:** `GET /api/requests?community=Panorama Hills&status=Open` returns matching requests as JSON.
-- **Tests:** xUnit tests cover data mapping, filtering and the days-to-close calculation.
+- **Dashboard:** requests per week, the most common request types, open vs. closed, and median and average days to close by department, for the whole city or one community.
+- **REST API:** `GET /api/requests?community=Panorama Hills&status=Open` returns matching requests as JSON, with paging.
+- **Tests:** 36 xUnit tests covering data mapping, the sync, filters, dashboard calculations and the API (integration tests that run the whole app in memory).
+
+## Walkthrough
+
+**1. Load the data.** The home page shows how many requests are stored. **Sync from Open Calgary** loads the last 90 days (about 130,000 requests, a few minutes the first time); after that, a sync takes seconds because it only asks for requests updated since the newest one stored.
+
+![Home page](docs/screenshots/home.png)
+
+**2. Browse and filter.** The Browse page lists requests newest first, 50 per page. Filters can be combined, and they live in the URL, so any search can be bookmarked or shared. Here: pothole requests in Panorama Hills.
+
+![Browse page filtered to pothole requests in Panorama Hills](docs/screenshots/browse.png)
+
+**3. Look at one request.** Each request has a page with its dates, how long it took to close (or how long it's been open), the department, how it was submitted, and links to similar requests.
+
+![Request detail page](docs/screenshots/details.png)
+
+**4. See the patterns.** The dashboard (top of this page) summarizes every request or one community's. Clicking a request type, status or department opens Browse with that filter applied.
 
 ## The data
 
-The app uses the [311 Service Requests](https://data.calgary.ca/Services-and-Amenities/311-Service-Requests/iahh-g8bj) dataset (ID `iahh-g8bj`) from the City of Calgary's Open Data Portal. It covers requests from 2012 to the present, updates daily, and has over 7 million rows, so the app loads a recent window (90 days by default, about 140,000 requests).
+The app uses the [311 Service Requests](https://data.calgary.ca/Services-and-Amenities/311-Service-Requests/iahh-g8bj) dataset (ID `iahh-g8bj`) from the City of Calgary's Open Data Portal. It covers requests from 2012 to the present, updates daily, and has over 7 million rows, so the app loads a recent window (90 days by default, about 130,000 requests).
 
 The dataset is served through a Socrata API that returns JSON and accepts SoQL query parameters. For example, the five newest requests:
 
@@ -34,9 +50,15 @@ https://data.calgary.ca/resource/iahh-g8bj.json?$order=requested_date DESC&$limi
 | `source` | `Source` | Phone, App, Other |
 | `service_name` | `ServiceName` | Roads - Traffic Signal Construction Inquiry |
 | `agency_responsible` | `AgencyResponsible` | OS - Mobility |
-| `address` | `Address` | |
-| `comm_code` / `comm_name` | `CommunityCode` / `CommunityName` | Panorama Hills |
-| `longitude` / `latitude` | `Longitude` / `Latitude` | |
+| `address` | `Address` | Always empty in practice |
+| `comm_code` / `comm_name` | `CommunityCode` / `CommunityName` | PAN / PANORAMA HILLS |
+| `longitude` / `latitude` | `Longitude` / `Latitude` | The community's centre point |
+
+Things worth knowing about the data:
+
+- **Locations are approximate.** The City publishes the centre point of the request's community, never the exact location, and leaves `address` empty. Across all 7.5 million rows, `location_type` is only ever `Community Centrepoint` or `None`. The app labels coordinates as approximate for this reason.
+- **Status, not closed date, decides open vs. closed.** Some reopened requests say "Open" but still have a closed date, so the dashboard goes by status.
+- **Longitude and latitude arrive as strings**, and dates have no time part (`2026-10-01T00:00:00.000`).
 
 ## Tech stack
 
@@ -47,7 +69,7 @@ https://data.calgary.ca/resource/iahh-g8bj.json?$order=requested_date DESC&$limi
 | Data access | Entity Framework Core |
 | Database | SQLite |
 | HTTP | HttpClient with System.Text.Json |
-| Testing | xUnit |
+| Testing | xUnit, WebApplicationFactory (integration tests) |
 | Tools | Visual Studio, Git, GitHub |
 
 ## Getting started
@@ -136,15 +158,17 @@ calgary-311-explorer/
 ├── Calgary311Explorer.slnx
 ├── src/
 │   └── Calgary311.Web/
+│       ├── Api/                  # JSON endpoints and response types
 │       ├── Data/                 # AppDbContext
+│       ├── Migrations/           # EF Core migrations (database schema history)
 │       ├── Models/               # ServiceRequest
-│       ├── Services/             # Sync service (to build)
-│       ├── Pages/                # Razor Pages
+│       ├── Services/             # Sync, filters, dashboard calculations
+│       ├── Pages/                # Razor Pages: Home, Requests (Browse, Details), Dashboard
 │       ├── wwwroot/css/          # Styles
-│       ├── OpenCalgaryOptions.cs # API settings
-│       └── Program.cs
+│       ├── OpenCalgaryOptions.cs # Open Calgary API settings
+│       └── Program.cs            # Startup: services and endpoints
 ├── tests/
-│   └── Calgary311.Tests/         # xUnit tests
+│   └── Calgary311.Tests/         # xUnit unit and integration tests
 └── docs/
     └── screenshots/
 ```
@@ -157,11 +181,11 @@ calgary-311-explorer/
 - [x] **4. Browse page:** table of requests with filters (community, service type, status, department, date range) and paging
 - [x] **5. Request detail page:** everything known about one request
 - [x] **6. API endpoint:** `GET /api/requests` with the same filters
-- [ ] **7. Dashboard:** top service types, open vs. closed, average days to close by department
-- [ ] **8. Tests:** 8–10 xUnit tests on mapping, filters and dashboard calculations
-- [ ] **9. Docs:** screenshots and a short walkthrough in this README
+- [x] **7. Dashboard:** top service types, open vs. closed, average days to close by department
+- [x] **8. Tests:** 8–10 xUnit tests on mapping, filters and dashboard calculations (ended up with 36)
+- [x] **9. Docs:** screenshots and a short walkthrough in this README
 
-Stretch: a map of open requests using the coordinates, scheduled daily sync, deployment to Azure App Service.
+Next: scheduled daily sync, automated builds and tests with GitHub Actions, deployment to Azure App Service. A map is less useful than planned, since every request in a community shares one point.
 
 ## What I learned
 

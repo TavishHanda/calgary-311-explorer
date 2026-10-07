@@ -1,0 +1,188 @@
+@page
+@model DashboardModel
+@using Calgary311.Web.Services
+@{
+    ViewData["Title"] = "Dashboard";
+    var stats = Model.Stats;
+    var maxWeek = stats.RequestsPerWeek.Count > 0 ? stats.RequestsPerWeek.Max(w => w.Count) : 0;
+    var maxServiceType = stats.TopServiceTypes.Count > 0 ? stats.TopServiceTypes.Max(s => s.Count) : 0;
+    var maxStatus = stats.Statuses.Count > 0 ? stats.Statuses.Max(s => s.Count) : 0;
+    var maxDepartmentDays = stats.Departments.Max(d => d.AverageDaysToClose) ?? 0;
+}
+
+<h1>Dashboard</h1>
+<p class="lead">
+    @(string.IsNullOrWhiteSpace(Model.Filter.Community) ? "All communities" : Model.Filter.Community)
+    @if (Model.Filter.From is not null || Model.Filter.To is not null)
+    {
+        <span>· @(Model.Filter.From?.ToString("MMM d, yyyy") ?? "start") to @(Model.Filter.To?.ToString("MMM d, yyyy") ?? "today")</span>
+    }
+</p>
+
+<form method="get" class="filters">
+    <label>
+        Community
+        <select name="Community">
+            <option value="">All communities</option>
+            @foreach (var community in Model.Communities)
+            {
+                <option selected="@(string.Equals(community, Model.Filter.Community, StringComparison.OrdinalIgnoreCase))">@community</option>
+            }
+        </select>
+    </label>
+    <label>
+        From
+        <input type="date" name="From" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" />
+    </label>
+    <label>
+        To
+        <input type="date" name="To" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" />
+    </label>
+    <div class="filter-actions">
+        <button type="submit" class="button">Update</button>
+        <a asp-page="/Dashboard">Clear</a>
+    </div>
+</form>
+
+@if (stats.Total == 0)
+{
+    <div class="notice">No requests match these filters.</div>
+    return;
+}
+
+<dl class="stats">
+    <div>
+        <dt>Requests</dt>
+        <dd>@stats.Total.ToString("N0")</dd>
+    </div>
+    <div>
+        <dt>Open</dt>
+        <dd>@stats.Open.ToString("N0")</dd>
+    </div>
+    <div>
+        <dt>Closed</dt>
+        <dd>@stats.Closed.ToString("N0")</dd>
+    </div>
+    <div>
+        <dt>Average days to close</dt>
+        <dd>@(stats.AverageDaysToClose?.ToString("0.0") ?? "—")</dd>
+    </div>
+    <div>
+        <dt>Median days to close</dt>
+        <dd>@(stats.MedianDaysToClose?.ToString("0.#") ?? "—")</dd>
+    </div>
+</dl>
+
+<section class="panel">
+    <h2>Requests per week</h2>
+    <p class="muted">Last @DashboardCalculator.WeeksShown weeks of data, by the week each request was made. Lighter columns are partial weeks.</p>
+    <div class="columns" role="img" aria-label="Column chart of requests per week. The table below has the same numbers.">
+        @foreach (var week in stats.RequestsPerWeek)
+        {
+            var label = $"Week of {week.WeekStart:MMM d}{(week.IsPartial ? " (partial)" : "")}: {week.Count:N0} requests";
+            <div class="column-slot" title="@label">
+                <div class="column @(week.IsPartial ? "partial" : "")" style="height: @DashboardModel.Percent(week.Count, maxWeek)"></div>
+            </div>
+        }
+    </div>
+    <div class="column-axis">
+        @foreach (var week in stats.RequestsPerWeek)
+        {
+            <span>@week.WeekStart.ToString("MMM d")</span>
+        }
+    </div>
+    <details>
+        <summary>Show as a table</summary>
+        <table class="requests">
+            <thead><tr><th>Week of</th><th class="number">Requests</th></tr></thead>
+            <tbody>
+                @foreach (var week in stats.RequestsPerWeek)
+                {
+                    <tr>
+                        <td>@week.WeekStart.ToString("MMM d, yyyy")@(week.IsPartial ? " (partial)" : "")</td>
+                        <td class="number">@week.Count.ToString("N0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </details>
+</section>
+
+<div class="panel-grid">
+    <section class="panel">
+        <h2>Most common request types</h2>
+        <p class="muted">Click one to see those requests.</p>
+        <div class="bars">
+            @foreach (var item in stats.TopServiceTypes)
+            {
+                <a class="bar-label" asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("ServiceType", item.Label)'>@item.Label</a>
+                <div class="bar-track" title="@item.Label: @item.Count.ToString("N0") requests">
+                    <div class="bar" style="--pct: @DashboardModel.Percent(item.Count, maxServiceType)"></div>
+                    <span class="bar-value">@item.Count.ToString("N0")</span>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Open vs. closed</h2>
+        <p class="muted">Requests by current status.</p>
+        <div class="bars">
+            @foreach (var item in stats.Statuses)
+            {
+                <a class="bar-label" asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("Status", item.Label)'>
+                    <partial name="_StatusBadge" model="item.Label" />
+                </a>
+                <div class="bar-track" title="@item.Label: @item.Count.ToString("N0") requests (@((100.0 * item.Count / stats.Total).ToString("0.#"))%)">
+                    <div class="bar" style="--pct: @DashboardModel.Percent(item.Count, maxStatus)"></div>
+                    <span class="bar-value">@item.Count.ToString("N0")</span>
+                </div>
+            }
+        </div>
+    </section>
+</div>
+
+<section class="panel">
+    <h2>Days to close by department</h2>
+    <p class="muted">
+        Closed requests only, counted in whole days. The median is the middle value, so a few very slow requests
+        don't pull it up the way they pull up the average.
+    </p>
+    <div class="table-wrap">
+        <table class="requests department-table">
+            <thead>
+                <tr>
+                    <th>Department</th>
+                    <th class="number">Requests</th>
+                    <th class="number">Closed</th>
+                    <th class="number">Median days</th>
+                    <th>Average days</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var department in stats.Departments)
+                {
+                    <tr>
+                        <td><a asp-page="/Requests/Index" asp-all-route-data='Model.BrowseLink("Department", department.Department)'>@department.Department</a></td>
+                        <td class="number">@department.Requests.ToString("N0")</td>
+                        <td class="number">@department.Closed.ToString("N0")</td>
+                        <td class="number">@(department.MedianDaysToClose?.ToString("0.#") ?? "—")</td>
+                        <td>
+                            @if (department.AverageDaysToClose is double average)
+                            {
+                                <div class="bar-track">
+                                    <div class="bar" style="--pct: @DashboardModel.Percent(average, maxDepartmentDays)"></div>
+                                    <span class="bar-value">@average.ToString("0.0")</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="muted">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
