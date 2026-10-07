@@ -16,7 +16,7 @@ Built with C#, ASP.NET Core Razor Pages, Entity Framework Core and SQLite.
 - **Browse and search:** filter requests by community, service type, status, department and date range, with a detail page for each request.
 - **Dashboard:** requests per week, the most common request types, open vs. closed, and median and average days to close by department, for the whole city or one community.
 - **REST API:** `GET /api/requests?community=Panorama Hills&status=Open` returns matching requests as JSON, with paging.
-- **Tests:** 54 xUnit tests covering data mapping, the sync (including resuming after an interrupted one), filters, dashboard calculations, the background sync and the API (integration tests that run the whole app in memory).
+- **Tests:** 58 xUnit tests covering data mapping, the sync (including resuming after an interrupted one), filters, dashboard calculations, the background sync and the API (integration tests that run the whole app in memory).
 
 ## Walkthrough
 
@@ -113,6 +113,7 @@ All endpoints return JSON.
 | --- | --- |
 | `GET /api/requests` | A page of requests, newest first |
 | `GET /api/requests/{id}` | One request by its City ID, or 404 |
+| `GET /api/summary` | Headline numbers: requests on the most recent full day, that day's top request type, and how many are open. Other sites can read it only if they're listed in `Cors:AllowedOrigins` (the portfolio is) |
 
 `/api/requests` takes the same filters as the Browse page, all optional and not case-sensitive: `community`, `serviceType` (matches part of the name), `serviceName` (exact name), `status`, `department`, `from` and `to` (dates, `yyyy-MM-dd`), plus `page` and `pageSize` (default 50, max 500).
 
