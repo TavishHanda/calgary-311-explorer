@@ -1,0 +1,123 @@
+@page
+@model Calgary311.Web.Pages.Requests.IndexModel
+@{
+    ViewData["Title"] = "Browse";
+}
+
+<h1>Browse requests</h1>
+
+@* method="get" puts the filters in the URL, so a filtered view can be bookmarked or shared. *@
+<form method="get" class="filters">
+    <label>
+        Community
+        <select name="Community">
+            <option value="">Any</option>
+            @foreach (var community in Model.Communities)
+            {
+                <option selected="@(community == Model.Filter.Community)">@community</option>
+            }
+        </select>
+    </label>
+
+    <label>
+        Service type
+        <input name="ServiceType" value="@Model.Filter.ServiceType" list="service-types" placeholder="e.g. pothole" />
+        <datalist id="service-types">
+            @foreach (var serviceType in Model.ServiceTypes)
+            {
+                <option value="@serviceType"></option>
+            }
+        </datalist>
+    </label>
+
+    <label>
+        Status
+        <select name="Status">
+            <option value="">Any</option>
+            @foreach (var status in Model.Statuses)
+            {
+                <option selected="@(status == Model.Filter.Status)">@status</option>
+            }
+        </select>
+    </label>
+
+    <label>
+        Department
+        <select name="Department">
+            <option value="">Any</option>
+            @foreach (var department in Model.Departments)
+            {
+                <option selected="@(department == Model.Filter.Department)">@department</option>
+            }
+        </select>
+    </label>
+
+    <label>
+        From
+        <input type="date" name="From" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" />
+    </label>
+
+    <label>
+        To
+        <input type="date" name="To" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" />
+    </label>
+
+    <div class="filter-actions">
+        <button type="submit" class="button">Search</button>
+        <a asp-page="./Index">Clear</a>
+    </div>
+</form>
+
+<p class="result-count">
+    @Model.TotalCount.ToString("N0") @(Model.TotalCount == 1 ? "request" : "requests")
+    @if (Model.TotalCount > 0)
+    {
+        <span>· page @Model.PageNumber of @Model.TotalPages.ToString("N0")</span>
+    }
+</p>
+
+@if (Model.Requests.Count == 0)
+{
+    <div class="notice">No requests match these filters.</div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="requests">
+            <thead>
+                <tr>
+                    <th>Requested</th>
+                    <th>Service type</th>
+                    <th>Community</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th class="number">Days to close</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var request in Model.Requests)
+                {
+                    <tr>
+                        <td class="nowrap">@request.RequestedDate.ToString("MMM d, yyyy")</td>
+                        <td><a asp-page="./Details" asp-route-id="@request.ServiceRequestId">@request.ServiceName</a></td>
+                        <td>@request.CommunityName</td>
+                        <td>@request.AgencyResponsible</td>
+                        <td><partial name="_StatusBadge" model="request.Status" /></td>
+                        <td class="number">@request.DaysToClose</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pager">
+        @if (Model.PageNumber > 1)
+        {
+            <a asp-page="./Index" asp-all-route-data="Model.RouteValuesFor(Model.PageNumber - 1)">← Previous</a>
+        }
+        @if (Model.PageNumber < Model.TotalPages)
+        {
+            <a asp-page="./Index" asp-all-route-data="Model.RouteValuesFor(Model.PageNumber + 1)">Next →</a>
+        }
+    </nav>
+}

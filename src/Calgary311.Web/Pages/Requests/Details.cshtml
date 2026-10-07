@@ -1,0 +1,84 @@
+@page "{id}"
+@model Calgary311.Web.Pages.Requests.DetailsModel
+@{
+    var request = Model.ServiceRequest;
+    ViewData["Title"] = request.ServiceName;
+}
+
+@* Goes back to the previous page so the filters are kept; falls back to Browse if this page was opened directly. *@
+<p><a asp-page="./Index" onclick="if (history.length > 1) { history.back(); return false; }">← Back to results</a></p>
+
+<h1>@request.ServiceName</h1>
+<p class="lead">
+    Request @request.ServiceRequestId · <partial name="_StatusBadge" model="request.Status" />
+</p>
+
+<dl class="stats">
+    <div>
+        <dt>Requested</dt>
+        <dd>@request.RequestedDate.ToString("MMM d, yyyy")</dd>
+    </div>
+    @if (request.DaysToClose is int daysToClose)
+    {
+        <div>
+            <dt>Closed</dt>
+            <dd>@request.ClosedDate!.Value.ToString("MMM d, yyyy")</dd>
+        </div>
+        <div>
+            <dt>Days to close</dt>
+            <dd>@daysToClose</dd>
+        </div>
+    }
+    else
+    {
+        <div>
+            <dt>Open for</dt>
+            <dd>@Model.DaysOpen @(Model.DaysOpen == 1 ? "day" : "days")</dd>
+        </div>
+    }
+</dl>
+
+<table class="details">
+    <tr><th>Service type</th><td>@request.ServiceName</td></tr>
+    <tr><th>Status</th><td>@request.Status</td></tr>
+    <tr><th>Department</th><td>@(request.AgencyResponsible ?? "—")</td></tr>
+    <tr><th>Submitted by</th><td>@(request.Source ?? "—")</td></tr>
+    <tr>
+        <th>Community</th>
+        <td>
+            @if (request.CommunityName is not null)
+            {
+                <a asp-page="./Index" asp-route-Community="@request.CommunityName">@request.CommunityName</a>
+                @if (request.CommunityCode is not null)
+                {
+                    <span class="muted">(@request.CommunityCode)</span>
+                }
+            }
+            else
+            {
+                @:—
+            }
+        </td>
+    </tr>
+    <tr><th>Address</th><td>@(request.Address ?? "—")</td></tr>
+    <tr><th>Last updated</th><td>@(request.UpdatedDate?.ToString("MMM d, yyyy") ?? "—")</td></tr>
+    <tr>
+        <th>Location</th>
+        <td>
+            @if (request.Latitude is double lat && request.Longitude is double lon)
+            {
+                var latText = lat.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
+                var lonText = lon.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
+                <a href="https://www.openstreetmap.org/?mlat=@latText&mlon=@lonText#map=16/@latText/@lonText" target="_blank" rel="noopener">@latText, @lonText (map)</a>
+            }
+            else
+            {
+                @:—
+            }
+        </td>
+    </tr>
+</table>
+
+<p>
+    <a asp-page="./Index" asp-route-ServiceType="@request.ServiceName">More “@request.ServiceName” requests</a>
+</p>
