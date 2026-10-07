@@ -117,7 +117,7 @@ calgary-311-explorer/
 
 - [x] **1. Setup:** solution, web and test projects, `ServiceRequest` model, `AppDbContext`, starter page
 - [x] **2. Database:** first migration (`InitialCreate`) and database created locally
-- [ ] **3. Sync service:** fetch requests from the API in pages, map JSON to `ServiceRequest`, insert new rows and update changed ones; a button or command to run it
+- [x] **3. Sync service:** fetch requests from the API in pages, map JSON to `ServiceRequest`, insert new rows and update changed ones; a button or command to run it
 - [ ] **4. Browse page:** table of requests with filters (community, service type, status, department, date range) and paging
 - [ ] **5. Request detail page:** everything known about one request
 - [ ] **6. API endpoint:** `GET /api/requests` with the same filters

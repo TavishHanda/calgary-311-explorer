@@ -24,8 +24,18 @@ else
         </div>
     </dl>
 
+    @if (Model.SyncMessage is not null)
+    {
+        <div class="notice">@Model.SyncMessage</div>
+    }
+
     @if (Model.TotalRequests == 0)
     {
-        <p>The database is empty. Build the sync service (roadmap step 3) to load requests from the City's API.</p>
+        <p>The database is empty. Sync to load the last 90 days of requests from the City's API. The first sync takes a minute or two.</p>
     }
+
+    <form method="post" asp-page-handler="Sync" class="sync-form"
+          onsubmit="const b = this.querySelector('button'); b.disabled = true; b.textContent = 'Syncing…';">
+        <button type="submit" class="button">Sync from Open Calgary</button>
+    </form>
 }

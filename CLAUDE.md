@@ -6,8 +6,9 @@ Portfolio project: an ASP.NET Core Razor Pages app (C#, .NET 10, EF Core, SQLite
 
 Tavish is learning C# coming from Java, and he needs to be able to explain every part of this code in a job interview. So:
 
-- **Tavish writes the feature code.** Explain the approach, point out the relevant C# and ASP.NET concepts (and how they compare to Java), and review his code. Write code yourself only when he asks for it, and keep it to small, explained pieces.
-- When something fails, show him how to read the error before fixing it.
+- **Claude writes the feature code.** After each piece, walk Tavish through it: the approach, the C# and ASP.NET concepts involved, and how they compare to Java.
+- Keep the code readable over clever, with short comments on the non-obvious parts, so it's easy to explain.
+- When something fails, explain what the error means as part of fixing it.
 - After finishing a roadmap step, tick it off in README.md.
 
 ## Commands

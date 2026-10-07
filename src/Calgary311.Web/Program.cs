@@ -1,6 +1,8 @@
 using Calgary311.Web;
 using Calgary311.Web.Data;
+using Calgary311.Web.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +14,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.Configure<OpenCalgaryOptions>(
     builder.Configuration.GetSection(OpenCalgaryOptions.SectionName));
 
-// TODO (roadmap step 3): register the sync service here, e.g.
-// builder.Services.AddHttpClient<ServiceRequestSync>();
+// A typed HttpClient: ASP.NET creates the HttpClient, points it at the API and injects it into ServiceRequestSync.
+builder.Services.AddHttpClient<ServiceRequestSync>((services, client) =>
+{
+    var options = services.GetRequiredService<IOptions<OpenCalgaryOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl);
+    if (!string.IsNullOrEmpty(options.AppToken))
+    {
+        client.DefaultRequestHeaders.Add("X-App-Token", options.AppToken);
+    }
+});
 
 var app = builder.Build();
 
