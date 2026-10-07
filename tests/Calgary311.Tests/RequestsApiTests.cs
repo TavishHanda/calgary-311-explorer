@@ -122,6 +122,32 @@ public class RequestsApiTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Summary_ReportsTheDayBeforeTheNewest()
+    {
+        var summary = await _client.GetFromJsonAsync<SummaryResponse>("/api/summary");
+
+        // The newest request is Sep 3, so the summary covers Sep 2, which has only request B.
+        Assert.Equal(new DateTime(2026, 9, 2), summary!.Day);
+        Assert.Equal(1, summary.RequestsThatDay);
+        Assert.Equal("Roads - Pothole Repair", summary.TopServiceThatDay);
+        Assert.Equal(2, summary.OpenRequests);
+    }
+
+    [Theory]
+    [InlineData("https://tavishhanda.github.io", true)]
+    [InlineData("https://some-other-site.example", false)]
+    public async Task Summary_AllowsOnlyListedSitesToReadIt(string origin, bool allowed)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/summary");
+        request.Headers.Add("Origin", origin);
+
+        var response = await _client.SendAsync(request);
+
+        // The browser only lets the page read the response when this header names its site.
+        Assert.Equal(allowed, response.Headers.Contains("Access-Control-Allow-Origin"));
+    }
+
     private static ServiceRequest Request(string id, string community, string status, DateTime requested, DateTime? closed = null) =>
         new()
         {

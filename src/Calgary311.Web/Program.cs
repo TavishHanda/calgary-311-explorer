@@ -15,6 +15,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.Configure<OpenCalgaryOptions>(
     builder.Configuration.GetSection(OpenCalgaryOptions.SectionName));
 
+// Browsers block a page on one site from reading another site's API unless that API allows it (CORS).
+// This lets the sites in Cors:AllowedOrigins, like the portfolio, read /api/summary.
+builder.Services.AddCors(options => options.AddPolicy(SummaryEndpoints.CorsPolicy, policy => policy
+    .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
+    .WithMethods("GET")));
+
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddHostedService<DailySyncService>();
 
@@ -44,9 +50,11 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseCors();
 
 app.MapRazorPages();
 
 app.MapRequestsApi();
+app.MapSummaryApi();
 
 app.Run();
